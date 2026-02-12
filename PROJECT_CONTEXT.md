@@ -4,6 +4,8 @@
 .
 ├── index.html
 ├── email.php
+├── config.php
+├── package.json
 ├── 404.html
 ├── nuestra-empresa.html
 ├── css/
@@ -59,35 +61,42 @@
 - `includes/`: librería PHP de Google reCAPTCHA v2 y autoload para validación servidor.
 - `img/` y `content/`: assets visuales (logos, fondos, proyectos, video hero, favicons).
 - `email.php`: endpoint backend para validación de reCAPTCHA y envío de correo por `mail()`.
+- `config.php`: configuración sensible centralizada (credenciales y correos).
+- `package.json`: manifiesto virtual de dependencias objetivo para modernización.
 
 ## Stack Tecnológico y Dependencias
 
-### Front-end
+### Stack vigente tras modernización técnica
 - **HTML5 + CSS + JavaScript (Vanilla + jQuery)**.
-- **Bootstrap 4.0.0-alpha.6** (CDN CSS y JS).
-- **jQuery 1.11.2** (CDN en runtime y copia local en `js/vendor`).
-- **jQuery Validate 1.16.0** (CDN).
-- **Pushy 1.1.0** (menú off-canvas).
-- **Vide 0.5.1** (video de fondo).
-- **BxSlider 4.1.2** (carrusel de proyectos).
-- **AOS (Animate On Scroll)** (local, versión no declarada en cabecera minificada).
-- **Typed.js** (local `typed.min.js`, versión no declarada en cabecera minificada).
-- **Modernizr 2.8.3 + Respond 1.4.2** (compatibilidad navegadores antiguos).
-- **Font Awesome** (script kit legacy `use.fontawesome.com`, sin versión explícita).
+- **Bootstrap 5.3.3** (CDN CSS + bundle JS).
+- **jQuery 3.7.1** (CDN runtime).
+- **jQuery Validate 1.20.0** (CDN).
+- **Font Awesome 6 (kit)**.
 - **Google Fonts (Roboto)**.
+- **Pushy 1.1.0** (local, legado).
+- **Vide 0.5.1** (local, legado).
+- **BxSlider 4.1.2 runtime local** (dependencia objetivo documentada: `bxslider 4.2.17`).
+- **AOS local runtime** (dependencia objetivo documentada: `aos 2.3.4`).
+- **PHP plano** para backend de contacto.
+- **Google reCAPTCHA PHP client `php_1.1.3`**.
 
-### Backend
-- **PHP** (sin framework) con endpoint único `email.php`.
-- **Google reCAPTCHA PHP client `php_1.1.3`** (librería incluida localmente en `includes/ReCaptcha`).
+### Dependencias documentadas oficialmente (`package.json` virtual)
+- `bootstrap@5.3.3`
+- `jquery@3.7.1`
+- `jquery-validation@1.20.0`
+- `@fortawesome/fontawesome-free@6.6.0`
+- `aos@2.3.4`
+- `bxslider@4.2.17`
+- `less@4.2.0` (dev)
 
-### Dependencias externas de servicios
+### Servicios externos
 - **Google reCAPTCHA v2** (`https://www.google.com/recaptcha/api.js`).
-- **Zendesk Chat (Zopim)** embed script con ID hardcodeado.
-- **Google Analytics (analytics.js)** UA hardcodeado.
+- **Zendesk Chat (Zopim)** embed script (legacy).
+- **Google Analytics (analytics.js)** script legacy (pendiente migración a GA4).
 
 ### Estilo / toolchain
-- Hay uso de **LESS** (`main.less`, `pushy.less`, `animate.less`, `css/source/*.less`) y CSS compilado (`main.css`, `pushy.css`).
-- No se detecta `package.json`, bundler moderno (Webpack/Vite), ni gestor de dependencias front.
+- Uso combinado de **LESS** y CSS compilado.
+- Sin pipeline de build activo todavía; `package.json` sirve como baseline de migración.
 
 ## Arquitectura y Flujo de Datos
 
@@ -95,25 +104,26 @@
 1. **`index.html`**: punto de entrada principal de la web.
 2. **`js/main.js`**: punto de entrada de comportamiento de cliente (ready handler jQuery).
 3. **`email.php`**: punto de entrada backend para envío del formulario.
+4. **`config.php`**: fuente de configuración sensible para backend.
 
 ### Flujo de carga
 1. `index.html` carga CSS (Bootstrap, normalize, pushy, aos, bxslider, main).
 2. En `<body>`, se renderizan secciones estáticas (`Inicio`, `Contacto`, `NuestraEmpresa`, `Servicios`, `Espesificaciones`, `Proyectos`).
-3. Al final de documento se cargan scripts en secuencia: jQuery → plugins (validate, bootstrap, vide, aos, pushy, bxslider, blur, typed) → `main.js`.
+3. Al final de documento se cargan scripts en secuencia: jQuery → validate → bootstrap bundle → plugins visuales → `main.js`.
 4. `main.js` inicializa validación, navegación smooth-scroll, video hero, slider y efectos visuales.
 
 ### Flujo de formulario de contacto
 1. Usuario llena `#frm-contacto` y resuelve reCAPTCHA.
 2. `main.js` valida cliente (campos requeridos + mínimo de comentario + token reCAPTCHA presente).
 3. Se realiza `POST` AJAX a `email.php` con `serialize()` del formulario.
-4. `email.php` valida token contra Google usando librería ReCaptcha.
-5. Si es válido, arma correo HTML y usa `mail()`; responde JSON `{Success: true/false, Result: ...}`.
+4. `email.php` toma credenciales desde `config.php`, sanitiza/valida entradas y verifica token contra Google.
+5. Si es válido, arma correo HTML sanitizado y usa `mail()`; responde JSON `{Success: true/false, Result: ...}`.
 6. Frontend muestra `alert()`, limpia formulario y resetea captcha cuando aplica.
 
 ### Acoplamientos relevantes
-- Fuerte acoplamiento por **IDs y clases hardcodeadas** entre HTML/CSS/JS (`#Video-vide`, `.bxslider`, `#menu a`, `#frm-contacto`).
-- Dependencia de orden de scripts (si falla jQuery/CDN, `main.js` queda inoperante).
-- Dependencia de servicios de terceros sin fallback robusto (reCAPTCHA, Zendesk, GA, CDN).
+- Acoplamiento por IDs/clases entre HTML/CSS/JS (`#Video-vide`, `.bxslider`, `#menu a`, `#frm-contacto`).
+- Dependencia de plugins legacy (pushy/bxslider/vide).
+- Dependencia de servicios de terceros sin fallback robusto (reCAPTCHA, Zendesk, GA).
 
 ## Inventario de Componentes y Funcionalidad
 
@@ -129,12 +139,12 @@
 
 ### 3) Contacto
 - **UI**: formulario (nombre, correo, comentario) + reCAPTCHA + datos de contacto.
-- **Archivos**: `index.html` (`#Contacto`, `#frm-contacto`), `js/main.js`, `email.php`.
+- **Archivos**: `index.html` (`#Contacto`, `#frm-contacto`), `js/main.js`, `email.php`, `config.php`.
 - **Lógica de negocio**:
   - Validación cliente con jQuery Validate.
   - Validación adicional JS: captcha obligatorio y comentario mínimo.
   - Envío AJAX a backend.
-  - Backend valida captcha, envía mail y retorna JSON.
+  - Backend sanitiza y valida payload, valida captcha, envía mail y retorna JSON.
 
 ### 4) Nuestra Empresa
 - **UI**: contenido institucional con objetivos y filosofía.
@@ -165,36 +175,29 @@
 
 ## Puntos de Atención para el Rediseño
 
-### Hardcoded values críticos (migrar a configuración segura)
-- **Claves de reCAPTCHA expuestas** (site key en HTML y secret key en PHP).
-- **Correos de destino y BCC hardcodeados** en `email.php`.
-- **IDs de terceros hardcodeados** (Zendesk key, Google Analytics UA).
-- **Textos institucionales y catálogo de proyectos embebidos** directamente en HTML.
-- **Rutas de imágenes/video fijas** en HTML/CSS/JS sin capa de configuración.
-- **Año de footer fijo (2017)** desactualizable manualmente.
+### Riesgos y deuda técnica prioritaria
+- **Plugins legacy no migrados aún**: Pushy, Vide, BxSlider y AOS local pueden requerir reemplazo progresivo.
+- **Tracking legacy**: Google Analytics `analytics.js` pendiente migración a GA4.
+- **Dependencia en `mail()`**: funcional pero limitada en trazabilidad/entregabilidad frente a SMTP/API transaccional.
+- **Front-end monolítico**: contenido y layout hardcodeados en `index.html`.
+- **Sin pipeline de build**: existen dependencias documentadas pero no integradas en un flujo npm real todavía.
 
-### Riesgos técnicos / malas prácticas detectadas
-- **Dependencias obsoletas o legacy**:
-  - jQuery 1.11.2 (EOL).
-  - Bootstrap 4 alpha (pre-release antigua).
-  - Modernizr/Respond orientado a navegadores muy antiguos.
-  - Google Analytics `analytics.js` (legacy frente a GA4).
-- **Sin pipeline moderno**: no hay control de versiones de dependencias vía npm/yarn ni build reproducible.
-- **CDNs sin estrategia de fallback completa** (solo include remoto para jQuery runtime).
-- **Seguridad backend mejorable**:
-  - `$_POST[...]` incrustado directo en HTML de correo (sin sanitización estricta).
-  - Sin CSRF token en formulario.
-  - Uso de `mail()` nativo (entregabilidad y observabilidad limitada).
-- **UX/error handling limitado**:
-  - Uso intensivo de `alert()`.
-  - En `.fail()` AJAX no hay feedback al usuario final.
-- **Accesibilidad/semántica**:
-  - Navegación y componentes con dependencia fuerte de JS.
-  - Varios contenidos podrían mejorar etiquetas semánticas y atributos ARIA.
+### Seguridad / hardening pendiente
+- Rotar claves de reCAPTCHA y moverlas a entorno real (no repositorio).
+- Añadir CSRF token al formulario.
+- Endurecer políticas de cabeceras (CSP, HSTS, X-Frame-Options en servidor web).
+- Validación adicional de rate limiting para endpoint de contacto.
 
-### Implicaciones para rediseño
-- Separar **contenido** de **presentación** (CMS/JSON/headless) para evitar edición manual del HTML.
-- Centralizar configuración sensible en variables de entorno (server-side).
-- Migrar gradualmente stack front (Bootstrap estable, jQuery moderno o framework actual).
-- Introducir arquitectura por componentes (design system + tokens + módulos).
-- Definir estrategia de analítica/observabilidad y formularios (API backend robusta).
+### CHANGELOG
+- Se añadió `package.json` virtual para normalizar versión objetivo de dependencias modernas.
+- `index.html` migró a CDNs modernos: Bootstrap 5.3.3, jQuery 3.7.1, jQuery Validate 1.20.0, Bootstrap bundle y Font Awesome kit actual.
+- Se ajustaron clases de formulario para compatibilidad Bootstrap 5 (`form-group` → `row mb-3`).
+- Se actualizó `js/main.js` para eliminar uso de API jQuery de Bootstrap removida (`button('loading'/'reset')`), reemplazándola con deshabilitado y texto temporal del botón.
+- Se creó `config.php` para centralizar credenciales y correos (con opción de variables de entorno).
+- Se refactorizó `email.php` para:
+  - consumir configuración desde `config.php`;
+  - sanitizar entradas (`nombre`, `correo`, `comentario`);
+  - validar formato de correo;
+  - evitar inyección de headers por saltos de línea;
+  - escapar contenido HTML del correo.
+- Se añadió comentario en `css/main.css` marcando reglas globales que podrían pisar estilos base de Bootstrap 5 y requieren revisión en rediseño.

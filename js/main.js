@@ -22,6 +22,7 @@ $(function () {
   $("#frm-contacto").on("submit", function () {
     var $frm = $(this);
     var $btnSubmit = $frm.find("button[type=submit]");
+    var originalBtnText = $btnSubmit.text();
     if (grecaptcha.getResponse().length === 0) {
       alert("Por favor valida el reCAPTCHA");
       return false;
@@ -31,7 +32,7 @@ $(function () {
       alert("Comentario es necesario.");
       return false;
     }
-    $btnSubmit.button("loading");
+    $btnSubmit.prop("disabled", true).text("Enviando...");
     $.ajax({
         url: 'email.php',
         type: 'POST',
@@ -52,7 +53,7 @@ $(function () {
         console.log("error", err);
       })
       .always(function () {
-        $btnSubmit.button("reset");
+        $btnSubmit.prop("disabled", false).text(originalBtnText);
       });
     return false;
   });
