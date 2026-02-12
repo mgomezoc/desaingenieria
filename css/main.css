@@ -3438,6 +3438,8 @@ body {
   -o-animation-name: wobble;
   animation-name: wobble;
 }
+/* Bootstrap 5 migration note:
+   Review global element selectors below (`*`, `a`, `ul`, `body`) because they may override Bootstrap defaults (spacing, typography and link styling). */
 * {
   box-sizing: border-box;
 }
